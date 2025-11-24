@@ -157,3 +157,48 @@ export async function cancelTriage(taskId: string): Promise<void> {
         throw new Error(error.detail || 'Failed to cancel task');
     }
 }
+
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatRequest {
+    message: string;
+    history: ChatMessage[];
+}
+
+export interface ChatResponse {
+    response: string;
+}
+
+/**
+ * Chat about a completed triage report
+ */
+export async function chatAboutReport(
+    taskId: string,
+    message: string,
+    history: ChatMessage[]
+): Promise<ChatResponse> {
+    const response = await fetch(`${API_BASE_URL}/chat/${taskId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            message: message,
+            history: history,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Chat request failed' }));
+        throw new Error(error.detail || 'Chat request failed');
+    }
+
+    const data = await response.json();
+
+    return {
+        response: data.response,
+    };
+}

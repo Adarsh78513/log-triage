@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { performTriage, pollTriageStatus, validateDescription, cancelTriage } from '../services/backendClient';
-import type { TriageResult, ChatMessage, MessageSender, UploadedLog, LogUploadMode } from '../types';
+import type { TriageResult, ChatMessage, MessageSender, UploadedLog, LogUploadMode, ConversationMode } from '../types';
 import { TRIAGE_QUESTIONS } from '../constants';
 import { ChatInterface } from './ChatInterface';
+import { ChatWithReport } from './ChatWithReport';
 
 type ProcessingState = 'idle' | 'awaiting_user_input' | 'validating_description' | 'awaiting_confirmation' | 'processing' | 'complete' | 'error' | 'transitioning';
 
@@ -18,6 +19,11 @@ export function ChatPage() {
     const [logUploadMode, setLogUploadMode] = useState<LogUploadMode>('none');
     const [uploadedLogs, setUploadedLogs] = useState<UploadedLog[]>([]);
     const [restoredText, setRestoredText] = useState<string | undefined>();
+
+    // Chat mode states
+    const [conversationMode, setConversationMode] = useState<ConversationMode>('triage');
+    const [completedResult, setCompletedResult] = useState<TriageResult | null>(null);
+    const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
 
     const currentQuestionIndexRef = useRef(0);
     const descriptionRef = useRef('');
@@ -215,6 +221,11 @@ export function ChatPage() {
                             addMessage('bot', undefined, undefined, false, statusResult.result);
                             setProcessingState('complete');
                             if (pollingTimeoutIdRef.current) clearTimeout(pollingTimeoutIdRef.current);
+
+                            // Switch to chat mode immediately
+                            setCompletedResult(statusResult.result);
+                            setCompletedTaskId(triageTaskIdRef.current);
+                            setConversationMode('chat');
                         } else if (statusResult.status === 'FAILED') {
                             setMessages(prev => prev.filter(m => !m.isLoading));
                             addMessage('bot', `Analysis failed: ${statusResult.message || 'Please try again.'}`);
@@ -296,6 +307,12 @@ export function ChatPage() {
 
     const currentQuestion = TRIAGE_QUESTIONS[currentQuestionIndexRef.current];
 
+    // If in chat mode, render the chat component
+    if (conversationMode === 'chat' && completedResult && completedTaskId) {
+        return <ChatWithReport result={completedResult} taskId={completedTaskId} />;
+    }
+
+    // Otherwise render the normal triage flow
     return (
         <ChatInterface
             messages={messages}

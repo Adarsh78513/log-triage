@@ -29,6 +29,7 @@ class Task:
         self.status: Literal["PENDING", "PROCESSING", "SUCCESS", "FAILED"] = "PENDING"
         self.result: Optional[TriageResult] = None
         self.message: str = "Task submitted"
+        self.chat_history: list[dict[str, str]] = []  # Store chat conversation history
 
 
 class TaskManager:
@@ -158,3 +159,40 @@ class TaskManager:
                 if task.status == "PROCESSING":
                     task.status = "FAILED"
                     task.message = f"Analysis failed: {str(e)}"
+    
+    def get_task_for_chat(self, task_id: str) -> Optional[Task]:
+        """
+        Get a task for chat interactions.
+        
+        Args:
+            task_id: The task ID
+            
+        Returns:
+            Task object if found and successful, None otherwise
+        """
+        with self.lock:
+            task = self.tasks.get(task_id)
+            if task and task.status == "SUCCESS":
+                return task
+        
+        return None
+    
+    def add_chat_message(self, task_id: str, role: str, content: str) -> bool:
+        """
+        Add a chat message to the task's history.
+        
+        Args:
+            task_id: The task ID
+            role: Role of the message sender ('user' or 'assistant')
+            content: Message content
+            
+        Returns:
+            True if message was added, False otherwise
+        """
+        with self.lock:
+            task = self.tasks.get(task_id)
+            if task and task.status == "SUCCESS":
+                task.chat_history.append({"role": role, "content": content})
+                return True
+        
+        return False

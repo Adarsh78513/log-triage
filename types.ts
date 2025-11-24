@@ -13,9 +13,9 @@ export interface TriageResult {
 }
 
 export interface TriageStatus {
-    status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
-    message: string;
-    result?: TriageResult;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED';
+  message: string;
+  result?: TriageResult;
 }
 
 export type MessageSender = 'user' | 'bot';
@@ -42,3 +42,10 @@ export interface UploadedLog {
   file: File;
   type: 'bad1' | 'good' | 'bad2';
 }
+
+export interface ChatMessageType {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export type ConversationMode = 'triage' | 'chat';

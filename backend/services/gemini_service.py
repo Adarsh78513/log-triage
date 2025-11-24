@@ -203,3 +203,91 @@ The JSON object should contain three keys:
             potential_issues=result_data["potentialIssues"],
             suggested_actions=result_data["suggestedActions"]
         )
+    
+    async def chat_about_report(
+        self,
+        user_message: str,
+        triage_result: TriageResult,
+        logs: list[LogFile],
+        user_answers: dict[str, str],
+        conversation_history: list[dict[str, str]]
+    ) -> str:
+        """
+        Chat about the triage report with context.
+        
+        Args:
+            user_message: The user's question
+            triage_result: The original triage analysis result
+            logs: The original log files
+            user_answers: The user's original answers
+            conversation_history: Previous chat messages
+            
+        Returns:
+            AI's response to the user's question
+        """
+        # Build log section
+        if len(logs) == 1:
+            log_section = f"""
+## Original Log File
+```
+{logs[0].content}
+```
+"""
+        else:
+            log_section = "## Original Log Files\n\n"
+            for i, log in enumerate(logs, 1):
+                log_type = log.type.replace('1', '').replace('2', '')
+                log_section += f"### Log {i} ({log_type} log)\n```\n{log.content}\n```\n\n"
+        
+        # Build conversation context
+        conversation_context = ""
+        if conversation_history:
+            conversation_context = "\n## Previous Conversation\n"
+            for msg in conversation_history:
+                role_label = "User" if msg["role"] == "user" else "Assistant"
+                conversation_context += f"**{role_label}**: {msg['content']}\n\n"
+        
+        # Build the complete context prompt
+        description = user_answers.get("usecase_description", "Not provided.")
+        
+        prompt = f"""
+You are an expert Senior Site Reliability Engineer (SRE) helping a user understand a log triage report.
+The user has already received a triage analysis and now has follow-up questions.
+
+## Original Issue Description
+{description}
+
+## Triage Report Summary
+{triage_result.summary}
+
+## Identified Issues
+{chr(10).join(f"{i+1}. {issue}" for i, issue in enumerate(triage_result.potential_issues))}
+
+## Suggested Actions
+{chr(10).join(f"{i+1}. {action}" for i, action in enumerate(triage_result.suggested_actions))}
+
+{log_section}
+{conversation_context}
+
+## User's Current Question
+{user_message}
+
+Please provide a helpful, detailed response to the user's question. You can reference:
+- Specific parts of the logs (quote relevant lines)
+- The issues identified in the triage report
+- The suggested actions
+- Technical details about the errors or problems
+
+Be conversational but technically accurate. If the user asks about something not in the logs or report, acknowledge the limitation but provide useful context where possible.
+"""
+        
+        # Generate response
+        response = self.client.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+            config=GenerateContentConfig(
+                temperature=0.7  # Slightly more creative for conversational responses
+            )
+        )
+        
+        return response.text

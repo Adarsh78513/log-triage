@@ -50,3 +50,20 @@ class TriageStatus(BaseModel):
 class TaskResponse(BaseModel):
     """Response model when submitting a triage task."""
     task_id: str = Field(..., description="Unique task identifier")
+
+
+class ChatMessageModel(BaseModel):
+    """Model for a single chat message."""
+    role: Literal["user", "assistant"] = Field(..., description="Role of the message sender")
+    content: str = Field(..., description="Content of the message")
+
+
+class ChatRequest(BaseModel):
+    """Request model for chat about triage report."""
+    message: str = Field(..., description="User's question about the report")
+    history: list[ChatMessageModel] = Field(default_factory=list, description="Previous conversation history")
+
+
+class ChatResponse(BaseModel):
+    """Response model for chat interactions."""
+    response: str = Field(..., description="AI's response to the user's question")
