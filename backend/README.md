@@ -1,106 +1,197 @@
-# Python Backend Migration
+# Log Triage Backend
 
-## Backend Structure
+Python FastAPI backend for AI-powered log analysis and triage.
 
-The backend is now implemented in Python using FastAPI. Here's the structure:
+## Features
+
+- **Description Validation**: Ensures user problem descriptions contain sufficient detail
+- **Async Log Triage**: Background processing of log analysis with polling support
+- **Multi-log Comparison**: Supports comparing good vs bad logs or multiple bad logs
+- **CORS Enabled**: Configured for local development with frontend
+
+## Architecture
 
 ```
 backend/
-├── main.py                 # FastAPI application entry point
-├── config.py              # Configuration management
-├── requirements.txt       # Python dependencies
-├── models/
-│   ├── __init__.py
-│   └── schemas.py         # Pydantic models for API contracts
-├── services/
-│   ├── __init__.py
-│   ├── base.py           # Abstract AI service interface
-│   ├── gemini_service.py # Gemini AI implementation
-│   └── task_manager.py   # Task management service
-└── routes/
-    ├── __init__.py
-    └── api.py            # API endpoints
+├── main.py              # FastAPI application entry point
+├── config.py            # Configuration and settings management
+├── requirements.txt     # Python dependencies
+├── models/              # Pydantic schemas
+│   ├── schemas.py       # Request/response models
+│   └── __init__.py
+├── routes/              # API endpoints
+│   ├── api.py           # Main API routes
+│   └── __init__.py
+└── services/            # Business logic
+    ├── gemini_service.py    # Gemini AI integration
+    ├── task_manager.py      # Async task management
+    ├── base.py              # Base service classes
+    └── __init__.py
 ```
 
-## Running the Application
+## Setup
 
 ### Prerequisites
+- Python 3.9 or higher
+- Gemini API key ([Get one here](https://ai.google.dev/))
 
-1. Install Python dependencies:
+### Installation
+
+1. **Create a virtual environment** (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local and add your GEMINI_API_KEY
+   ```
+
+### Running the Server
+
+**Development mode** (with auto-reload):
 ```bash
-cd backend
-pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
 ```
 
-2. Make sure your `.env.local` file has the API_KEY set
-
-### Development Mode
-
-**Option 1: Run separately** (recommended for development)
-
-Terminal 1 - Backend:
+**Production mode**:
 ```bash
-npm run backend
-# or
-cd backend && python -m uvicorn main:app --reload --port 8000
-```
-
-Terminal 2 - Frontend:
-```bash
-npm run dev
-```
-
-**Option 2: Use a process manager like concurrently** (install separately)
-
-### Production Mode
-
-1. Build frontend:
-```bash
-npm run build
-```
-
-2. Run backend (serves both API and static files):
-```bash
-cd backend
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
+The API will be available at `http://localhost:8000`
+
 ## API Endpoints
 
-- `GET /` - Root endpoint
-- `GET /api/health` - Health check
-- `POST /api/validate` - Validate issue description
-- `POST /api/triage` - Submit triage request
-- `GET /api/triage/status/{taskId}` - Poll triage status
-- `POST /api/triage/cancel/{taskId}` - Cancel triage
-
-## Architecture Benefits
-
-1. **Modular Design**: Abstract service interfaces make it easy to swap AI providers
-2. **Type Safety**: Pydantic models ensure strong typing on the backend
-3. **Scalability**: Easily replace in-memory storage with Redis/database
-4. **Security**: API keys stay on the backend, never exposed to frontend
-5. **Flexibility**: Frontend and backend can be deployed separately
-
-## Swapping AI Models
-
-To use a different AI provider (e.g., OpenAI, Anthropic):
-
-1. Create a new service class implementing `BaseAIService` in `services/`
-2. Update `routes/api.py` to use the new service in the dependency injection
-3. No changes needed in the frontend!
-
-Example:
-```python
-# services/openai_service.py
-from .base import BaseAIService
-
-class OpenAIService(BaseAIService):
-    async def validate_description(self, ...):
-        # OpenAI implementation
-        pass
-    
-    async def perform_triage(self, ...):
-        # OpenAI implementation
-        pass
+### Health Check
 ```
+GET /
+GET /api/health
+```
+Returns server status.
+
+### Validate Description
+```
+POST /api/validate
+```
+**Request Body**:
+```json
+{
+  "user_answers": {
+    "environment": "production",
+    "service": "auth-service"
+  },
+  "current_description": "The login endpoint is failing"
+}
+```
+**Response**:
+```json
+{
+  "is_sufficient": false,
+  "clarifying_question": "What error are you seeing?",
+  "summary": ""
+}
+```
+
+### Submit Triage
+```
+POST /api/triage
+```
+**Request Body**:
+```json
+{
+  "logs": [
+    {
+      "content": "log file content here",
+      "type": "bad1"
+    }
+  ],
+  "user_answers": {
+    "usecase_description": "Login failing with 500 error"
+  }
+}
+```
+**Response**:
+```json
+{
+  "task_id": "task_1234567890_abc123"
+}
+```
+
+### Poll Triage Status
+```
+GET /api/triage/status/{task_id}
+```
+**Response**:
+```json
+{
+  "status": "SUCCESS",
+  "message": "Complete",
+  "result": {
+    "summary": "Brief analysis summary",
+    "potential_issues": ["Issue 1", "Issue 2"],
+    "suggested_actions": ["Action 1", "Action 2"]
+  }
+}
+```
+
+### Cancel Triage
+```
+POST /api/triage/cancel/{task_id}
+```
+
+## Configuration
+
+Environment variables (in `.env.local`):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GEMINI_API_KEY` | Your Gemini API key | *Required* |
+| `MODEL_NAME` | Gemini model to use | `gemini-2.5-flash` |
+| `HOST` | Server host | `0.0.0.0` |
+| `PORT` | Server port | `8000` |
+| `RELOAD` | Enable auto-reload | `true` |
+
+## Development
+
+### Running Tests
+```bash
+# Add pytest when tests are implemented
+pytest
+```
+
+### Code Style
+This project follows PEP 8 guidelines. Format with:
+```bash
+black .
+```
+
+## Troubleshooting
+
+### "Error loading settings"
+- Ensure `.env.local` exists in the backend directory
+- Verify `GEMINI_API_KEY` is set in `.env.local`
+
+### CORS Errors
+- Check `cors_origins` in `config.py` matches your frontend URL
+- Default allowed origins: `http://localhost:5173`, `http://localhost:3000`, `http://localhost:8080`
+
+### Import Errors
+- Ensure you're in the backend directory when running
+- Activate your virtual environment
+- Reinstall dependencies: `pip install -r requirements.txt`
+
+## Dependencies
+
+- **FastAPI**: Modern web framework
+- **Uvicorn**: ASGI server
+- **Pydantic**: Data validation
+- **google-genai**: Gemini API client
+- **python-dotenv**: Environment management

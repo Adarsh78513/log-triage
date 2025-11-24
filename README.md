@@ -10,14 +10,38 @@ View your app in AI Studio: https://ai.studio/apps/drive/1K_w1C8XXadPkGBHGVNHJlz
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:**  Node.js, Python 3.9+
 
+### Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Copy the example environment file and add your Gemini API key:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local and add your GEMINI_API_KEY
+   ```
+4. Start the backend server:
+   ```bash
+   python -m uvicorn main:app --reload --port 8000
+   ```
 
+### Frontend Setup
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Run the frontend:
+   ```bash
+   npm run dev
+   ```
+   Access at [http://localhost:3000](http://localhost:3000)
+
 
 ## Running with Docker
 
