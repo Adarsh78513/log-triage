@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { performTriage, pollTriageStatus, validateDescription, cancelTriage } from '../services/backendClient';
-import type { TriageResult, ChatMessage, MessageSender, UploadedLog, LogUploadMode, ConversationMode } from '../types';
+import type { TriageResult, ChatMessage, MessageSender, UploadedLog, LogUploadMode, ProcessingState } from '../types';
 import { TRIAGE_QUESTIONS } from '../constants';
 import { ChatInterface } from './ChatInterface';
-import { ChatWithReport } from './ChatWithReport';
+import { ChatDeepDive } from './ChatDeepDive';
 
-type ProcessingState = 'idle' | 'awaiting_user_input' | 'validating_description' | 'awaiting_confirmation' | 'processing' | 'complete' | 'error' | 'transitioning';
 
 const BOT_TYPING_DELAY = 500;
 const POLLING_INTERVAL = 2000;
@@ -20,8 +19,6 @@ export function ChatPage() {
     const [uploadedLogs, setUploadedLogs] = useState<UploadedLog[]>([]);
     const [restoredText, setRestoredText] = useState<string | undefined>();
 
-    // Chat mode states
-    const [conversationMode, setConversationMode] = useState<ConversationMode>('triage');
     const [completedResult, setCompletedResult] = useState<TriageResult | null>(null);
     const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
 
@@ -225,7 +222,6 @@ export function ChatPage() {
                             // Switch to chat mode immediately
                             setCompletedResult(statusResult.result);
                             setCompletedTaskId(triageTaskIdRef.current);
-                            setConversationMode('chat');
                         } else if (statusResult.status === 'FAILED') {
                             setMessages(prev => prev.filter(m => !m.isLoading));
                             addMessage('bot', `Analysis failed: ${statusResult.message || 'Please try again.'}`);
@@ -307,9 +303,17 @@ export function ChatPage() {
 
     const currentQuestion = TRIAGE_QUESTIONS[currentQuestionIndexRef.current];
 
-    // If in chat mode, render the chat component
-    if (conversationMode === 'chat' && completedResult && completedTaskId) {
-        return <ChatWithReport result={completedResult} taskId={completedTaskId} />;
+    if (processingState === 'complete' && triageTaskIdRef.current && messages.find(m => m.result)?.result) {
+        const result = messages.find(m => m.result)?.result;
+        if (result) {
+            return (
+                <ChatDeepDive
+                    taskId={triageTaskIdRef.current}
+                    initialResult={result}
+                    onReset={handleReset}
+                />
+            );
+        }
     }
 
     // Otherwise render the normal triage flow

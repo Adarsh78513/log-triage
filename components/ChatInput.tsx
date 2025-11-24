@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Question, LogUploadMode, UploadedLog } from '../types';
+import type { Question, LogUploadMode, UploadedLog, ProcessingState } from '../types';
 import { SendIcon } from './icons/SendIcon';
 import { UploadIcon } from './icons/UploadIcon';
 
@@ -9,7 +9,7 @@ interface ChatInputProps {
   onReset: () => void;
   onStop: () => void;
   currentQuestion?: Question;
-  processingState: 'idle' | 'awaiting_user_input' | 'validating_description' | 'awaiting_confirmation' | 'processing' | 'complete' | 'error' | 'transitioning';
+  processingState: ProcessingState;
   logUploadMode: LogUploadMode;
   uploadedLogs: UploadedLog[];
   restoredText?: string;
@@ -95,10 +95,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       );
     }
 
-    // This is the key state. Only show inputs if we are awaiting user input.
-    if (processingState === 'awaiting_user_input') {
-      // Check for multiple-choice questions
-      if (currentQuestion?.options) {
+    // This is the key state. Only show inputs if we are awaiting user input or in deep dive.
+    if (processingState === 'awaiting_user_input' || processingState === 'deep_dive') {
+      // Check for multiple-choice questions (only if not deep dive)
+      if (currentQuestion?.options && processingState !== 'deep_dive') {
         return (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {currentQuestion.options.map(option => (
@@ -114,8 +114,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         );
       }
 
-      // Check for text area questions
-      if (currentQuestion?.type === 'textarea') {
+      // Check for text area questions or deep dive chat
+      if (currentQuestion?.type === 'textarea' || processingState === 'deep_dive') {
         return (
           <form onSubmit={handleTextSubmit} className="flex items-center gap-2">
             <textarea
@@ -127,9 +127,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   handleTextSubmit(e);
                 }
               }}
-              placeholder={currentQuestion?.placeholder || 'Type your response...'}
+              placeholder={currentQuestion?.placeholder || 'Type your message...'}
               className="w-full flex-grow p-4 bg-white border-2 border-gray-200 rounded-xl text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none shadow-sm"
-              rows={2}
+              rows={1}
               autoFocus
             />
             <button type="submit" disabled={!text.trim()} className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white hover:from-indigo-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed">

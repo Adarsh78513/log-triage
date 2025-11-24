@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { ChatMessage, Question, LogUploadMode, UploadedLog } from '../types';
+import type { ChatMessage, Question, LogUploadMode, UploadedLog, ProcessingState } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 
@@ -11,7 +11,7 @@ interface ChatInterfaceProps {
   onReset: () => void;
   onStop: () => void;
   currentQuestion?: Question;
-  processingState: 'idle' | 'awaiting_user_input' | 'validating_description' | 'awaiting_confirmation' | 'processing' | 'complete' | 'error' | 'transitioning';
+  processingState: ProcessingState;
   logUploadMode: LogUploadMode;
   uploadedLogs: UploadedLog[];
   restoredText?: string;

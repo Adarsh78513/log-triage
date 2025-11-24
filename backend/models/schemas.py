@@ -67,3 +67,23 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     """Response model for chat interactions."""
     response: str = Field(..., description="AI's response to the user's question")
+
+
+class RAGDocument(BaseModel):
+    """Model for a single document to be uploaded to RAG."""
+    filename: str = Field(..., description="Name of the file")
+    content: str = Field(..., description="Text content of the file")
+    size: int = Field(..., description="Size of the file in bytes")
+
+
+class RAGUploadRequest(BaseModel):
+    """Request model for uploading documents to RAG."""
+    documents: list[RAGDocument] = Field(..., description="List of documents to upload")
+    tech_area: str = Field(..., description="Technical area/category for the documents")
+
+
+class RAGUploadResponse(BaseModel):
+    """Response model for RAG upload operation."""
+    success: bool = Field(..., description="Whether the upload was successful")
+    processed_count: int = Field(..., description="Number of documents processed")
+    message: str = Field(..., description="Status message")

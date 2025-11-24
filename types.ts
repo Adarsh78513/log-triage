@@ -18,7 +18,7 @@ export interface TriageStatus {
   result?: TriageResult;
 }
 
-export type MessageSender = 'user' | 'bot';
+export type MessageSender = 'bot' | 'user';
 
 export interface ChatMessage {
   id: string;
@@ -49,3 +49,14 @@ export interface ChatMessageType {
 }
 
 export type ConversationMode = 'triage' | 'chat';
+
+export type ProcessingState =
+  | 'idle'
+  | 'awaiting_user_input'
+  | 'validating_description'
+  | 'awaiting_confirmation'
+  | 'processing'
+  | 'complete'
+  | 'error'
+  | 'transitioning'
+  | 'deep_dive';

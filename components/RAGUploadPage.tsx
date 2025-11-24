@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { UploadIcon } from './icons/UploadIcon';
+import { uploadToRAG } from '../services/backendClient';
 import { DocumentIcon } from './icons/DocumentIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { TRIAGE_QUESTIONS } from '../constants';
@@ -23,7 +24,7 @@ export const RAGUploadPage: React.FC = () => {
             });
         }
     };
-    
+
     const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -51,20 +52,37 @@ export const RAGUploadPage: React.FC = () => {
     const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFileChange(e.target.files);
         // Reset file input to allow selecting the same file again
-        if(e.target) e.target.value = '';
+        if (e.target) e.target.value = '';
     };
 
     const onRemoveFile = (index: number) => {
         setFiles(files => files.filter((_, i) => i !== index));
     };
-    
-    const handleUpload = () => {
+
+    const handleUpload = async () => {
         if (files.length === 0 || !selectedTechArea) return;
-        // Mock upload logic
-        console.log(`Uploading ${files.length} files to tech area: ${selectedTechArea}`);
-        alert(`${files.length} file(s) for "${selectedTechArea}" would be uploaded to the RAG database.`);
-        setFiles([]);
-        setSelectedTechArea('');
+
+        try {
+            // Prepare documents for upload
+            const documents = await Promise.all(
+                files.map(async (file) => ({
+                    filename: file.name,
+                    content: await file.text(),
+                    size: file.size
+                }))
+            );
+
+            // Call backend API
+            const result = await uploadToRAG(documents, selectedTechArea);
+
+            alert(result.message);
+            setFiles([]);
+            setSelectedTechArea('');
+
+        } catch (error) {
+            console.error("RAG upload failed:", error);
+            alert(error instanceof Error ? error.message : "Failed to upload documents");
+        }
     };
 
     return (
@@ -86,7 +104,7 @@ export const RAGUploadPage: React.FC = () => {
                         onChange={onFileSelect}
                         accept=".txt,text/plain"
                     />
-                    <UploadIcon className="w-16 h-16 text-[#5C3C2C]/50 mb-4"/>
+                    <UploadIcon className="w-16 h-16 text-[#5C3C2C]/50 mb-4" />
                     <p className="text-lg font-semibold text-[#5C3C2C]">
                         Drag & Drop text files here
                     </p>
@@ -97,7 +115,7 @@ export const RAGUploadPage: React.FC = () => {
                         Only .txt files are accepted
                     </p>
                 </div>
-                
+
                 <div className="my-6">
                     <h2 className="text-lg font-semibold text-[#5C3C2C] mb-3">
                         <span className="text-[#FC9C44] mr-1">*</span>Select a Technical Area
@@ -107,11 +125,10 @@ export const RAGUploadPage: React.FC = () => {
                             <button
                                 key={area}
                                 onClick={() => setSelectedTechArea(area)}
-                                className={`w-full text-center p-2 rounded-lg transition-all duration-300 border ${
-                                    selectedTechArea === area
-                                        ? 'bg-[#5A84AC] text-white border-[#5A84AC]'
-                                        : 'bg-white/40 hover:bg-[#FC9C44]/20 border-[#742F14]/40 hover:border-[#FC9C44]'
-                                }`}
+                                className={`w-full text-center p-2 rounded-lg transition-all duration-300 border ${selectedTechArea === area
+                                    ? 'bg-[#5A84AC] text-white border-[#5A84AC]'
+                                    : 'bg-white/40 hover:bg-[#FC9C44]/20 border-[#742F14]/40 hover:border-[#FC9C44]'
+                                    }`}
                             >
                                 {area}
                             </button>
@@ -122,7 +139,7 @@ export const RAGUploadPage: React.FC = () => {
                 <div className="flex-grow overflow-y-auto">
                     {files.length > 0 && (
                         <div className="space-y-3">
-                             <h2 className="text-lg font-semibold text-[#5C3C2C]">Selected Files ({files.length})</h2>
+                            <h2 className="text-lg font-semibold text-[#5C3C2C]">Selected Files ({files.length})</h2>
                             {files.map((file, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 bg-white/40 rounded-lg animate-fade-in-up">
                                     <div className="flex items-center gap-3 overflow-hidden">
@@ -133,7 +150,7 @@ export const RAGUploadPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <button onClick={() => onRemoveFile(index)} className="p-1.5 rounded-full hover:bg-[#FC9C44]/40 transition-colors flex-shrink-0 ml-2" aria-label="Remove file">
-                                        <TrashIcon className="w-5 h-5 text-[#742F14]"/>
+                                        <TrashIcon className="w-5 h-5 text-[#742F14]" />
                                     </button>
                                 </div>
                             ))}

@@ -158,14 +158,58 @@ export async function cancelTriage(taskId: string): Promise<void> {
     }
 }
 
-export interface ChatMessage {
+export interface RAGDocument {
+    filename: string;
+    content: string;
+    size: number;
+}
+
+export interface RAGUploadResponse {
+    success: boolean;
+    processedCount: number;
+    message: string;
+}
+
+/**
+ * Upload documents to RAG system
+ */
+export async function uploadToRAG(
+    documents: RAGDocument[],
+    techArea: string
+): Promise<RAGUploadResponse> {
+    const response = await fetch(`${API_BASE_URL}/rag/upload`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            documents: documents,
+            tech_area: techArea,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'RAG upload failed' }));
+        throw new Error(error.detail || 'RAG upload failed');
+    }
+
+    const data = await response.json();
+
+    return {
+        success: data.success,
+        processedCount: data.processed_count,
+        message: data.message,
+    };
+}
+
+export interface ChatMessageModel {
     role: 'user' | 'assistant';
     content: string;
 }
 
 export interface ChatRequest {
     message: string;
-    history: ChatMessage[];
+    history: ChatMessageModel[];
 }
 
 export interface ChatResponse {
@@ -175,10 +219,10 @@ export interface ChatResponse {
 /**
  * Chat about a completed triage report
  */
-export async function chatAboutReport(
+export async function chatWithReport(
     taskId: string,
     message: string,
-    history: ChatMessage[]
+    history: ChatMessageModel[]
 ): Promise<ChatResponse> {
     const response = await fetch(`${API_BASE_URL}/chat/${taskId}`, {
         method: 'POST',
@@ -192,8 +236,8 @@ export async function chatAboutReport(
     });
 
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ detail: 'Chat request failed' }));
-        throw new Error(error.detail || 'Chat request failed');
+        const error = await response.json().catch(() => ({ detail: 'Chat failed' }));
+        throw new Error(error.detail || 'Chat failed');
     }
 
     const data = await response.json();
@@ -202,3 +246,7 @@ export async function chatAboutReport(
         response: data.response,
     };
 }
+
+
+
+

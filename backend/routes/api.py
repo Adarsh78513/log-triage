@@ -13,8 +13,10 @@ from models.schemas import (
     TaskResponse,
     ChatRequest,
     ChatResponse,
+    RAGUploadRequest,
+    RAGUploadResponse,
 )
-from services import GeminiAIService, TaskManager
+from services import GeminiAIService, TaskManager, RAGService
 
 
 router = APIRouter(prefix="/api")
@@ -40,6 +42,17 @@ def get_task_manager(
     if _task_manager is None:
         _task_manager = TaskManager(ai_service)
     return _task_manager
+
+
+_rag_service: RAGService | None = None
+
+
+def get_rag_service() -> RAGService:
+    """Dependency to get RAG service instance."""
+    global _rag_service
+    if _rag_service is None:
+        _rag_service = RAGService()
+    return _rag_service
 
 
 @router.get("/health")
@@ -208,3 +221,33 @@ async def chat_about_report(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+
+
+@router.post("/rag/upload", response_model=RAGUploadResponse)
+async def upload_rag_documents(
+    request: RAGUploadRequest,
+    rag_service: Annotated[RAGService, Depends(get_rag_service)]
+) -> RAGUploadResponse:
+    """
+    Upload documents to the RAG system.
+    
+    Args:
+        request: Upload request with documents and tech area
+        rag_service: RAG service dependency
+        
+    Returns:
+        RAGUploadResponse with success status
+    """
+    try:
+        count = await rag_service.ingest_documents(
+            documents=request.documents,
+            tech_area=request.tech_area
+        )
+        
+        return RAGUploadResponse(
+            success=True,
+            processed_count=count,
+            message=f"Successfully processed {count} documents for {request.tech_area}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"RAG upload failed: {str(e)}")
