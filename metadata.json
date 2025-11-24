@@ -1,0 +1,5 @@
+{
+  "name": "Storing of AI Log Triage Assistant",
+  "description": "An intelligent log analysis tool that uses a guided questionnaire and AI to triage technical issues, identify root causes, and suggest actionable solutions.",
+  "requestFramePermissions": []
+}
