@@ -202,6 +202,35 @@ export async function uploadToRAG(
     };
 }
 
+export interface RAGDocumentsResponse {
+    documents: RAGDocument[];
+    techArea: string;
+}
+
+/**
+ * Get uploaded documents for a tech area
+ */
+export async function getRAGDocuments(techArea: string): Promise<RAGDocumentsResponse> {
+    const response = await fetch(`${API_BASE_URL}/rag/documents/${encodeURIComponent(techArea)}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to retrieve documents' }));
+        throw new Error(error.detail || 'Failed to retrieve documents');
+    }
+
+    const data = await response.json();
+
+    return {
+        documents: data.documents,
+        techArea: data.tech_area,
+    };
+}
+
 export interface ChatMessageModel {
     role: 'user' | 'assistant';
     content: string;

@@ -1,17 +1,29 @@
 import React, { useState, useRef } from 'react';
 import { UploadIcon } from './icons/UploadIcon';
-import { uploadToRAG } from '../services/backendClient';
+import { uploadToRAG, getRAGDocuments, RAGDocument } from '../services/backendClient';
 import { DocumentIcon } from './icons/DocumentIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { TRIAGE_QUESTIONS } from '../constants';
 
 export const RAGUploadPage: React.FC = () => {
     const [files, setFiles] = useState<File[]>([]);
+    const [uploadedDocuments, setUploadedDocuments] = useState<RAGDocument[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [selectedTechArea, setSelectedTechArea] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const techAreaOptions = TRIAGE_QUESTIONS.find(q => q.id === 'tech_area')?.options ?? [];
+
+    const handleTechAreaSelect = async (area: string) => {
+        setSelectedTechArea(area);
+        try {
+            const response = await getRAGDocuments(area);
+            setUploadedDocuments(response.documents);
+        } catch (error) {
+            console.error("Failed to fetch documents:", error);
+            // Don't alert here to avoid interrupting the user flow, just log it
+        }
+    };
 
     const handleFileChange = (newFiles: FileList | null) => {
         if (newFiles) {
@@ -77,7 +89,9 @@ export const RAGUploadPage: React.FC = () => {
 
             alert(result.message);
             setFiles([]);
-            setSelectedTechArea('');
+
+            // Refresh the list of uploaded documents
+            handleTechAreaSelect(selectedTechArea);
 
         } catch (error) {
             console.error("RAG upload failed:", error);
@@ -124,7 +138,7 @@ export const RAGUploadPage: React.FC = () => {
                         {techAreaOptions.map(area => (
                             <button
                                 key={area}
-                                onClick={() => setSelectedTechArea(area)}
+                                onClick={() => handleTechAreaSelect(area)}
                                 className={`w-full text-center p-2 rounded-lg transition-all duration-300 border ${selectedTechArea === area
                                     ? 'bg-[#5A84AC] text-white border-[#5A84AC]'
                                     : 'bg-white/40 hover:bg-[#FC9C44]/20 border-[#742F14]/40 hover:border-[#FC9C44]'
@@ -135,6 +149,31 @@ export const RAGUploadPage: React.FC = () => {
                         ))}
                     </div>
                 </div>
+
+                {/* Display Uploaded Documents for Selected Area */}
+                {selectedTechArea && (
+                    <div className="mb-6 animate-fade-in">
+                        <h3 className="text-md font-semibold text-[#5C3C2C] mb-2">
+                            Existing Documents in {selectedTechArea}
+                        </h3>
+                        {uploadedDocuments.length > 0 ? (
+                            <div className="bg-white/30 rounded-lg p-3 max-h-40 overflow-y-auto border border-[#5C3C2C]/10">
+                                <ul className="space-y-2">
+                                    {uploadedDocuments.map((doc, idx) => (
+                                        <li key={idx} className="flex items-center gap-2 text-sm text-[#5C3C2C]/80">
+                                            <DocumentIcon className="w-4 h-4 text-[#5A84AC]" />
+                                            <span className="truncate">{doc.filename}</span>
+                                            <span className="text-xs text-[#5C3C2C]/50 ml-auto">{(doc.size / 1024).toFixed(1)} KB</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-[#5C3C2C]/50 italic">No documents uploaded for this area yet.</p>
+                        )}
+                    </div>
+                )
+                }
 
                 <div className="flex-grow overflow-y-auto">
                     {files.length > 0 && (

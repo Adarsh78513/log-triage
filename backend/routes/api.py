@@ -15,6 +15,7 @@ from models.schemas import (
     ChatResponse,
     RAGUploadRequest,
     RAGUploadResponse,
+    RAGDocumentsResponse,
 )
 from services import GeminiAIService, TaskManager, RAGService
 
@@ -251,3 +252,29 @@ async def upload_rag_documents(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"RAG upload failed: {str(e)}")
+
+
+@router.get("/rag/documents/{tech_area}", response_model=RAGDocumentsResponse)
+async def get_rag_documents(
+    tech_area: str,
+    rag_service: Annotated[RAGService, Depends(get_rag_service)]
+) -> RAGDocumentsResponse:
+    """
+    Retrieve uploaded documents for a specific technical area.
+    
+    Args:
+        tech_area: The technical area to retrieve documents for
+        rag_service: RAG service dependency
+        
+    Returns:
+        RAGDocumentsResponse with list of documents
+    """
+    try:
+        documents = await rag_service.get_documents(tech_area)
+        
+        return RAGDocumentsResponse(
+            documents=documents,
+            tech_area=tech_area
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve documents: {str(e)}")

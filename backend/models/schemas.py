@@ -87,3 +87,9 @@ class RAGUploadResponse(BaseModel):
     success: bool = Field(..., description="Whether the upload was successful")
     processed_count: int = Field(..., description="Number of documents processed")
     message: str = Field(..., description="Status message")
+
+
+class RAGDocumentsResponse(BaseModel):
+    """Response model for retrieving RAG documents."""
+    documents: list[RAGDocument] = Field(..., description="List of uploaded documents")
+    tech_area: str = Field(..., description="Technical area for the documents")
