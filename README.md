@@ -18,3 +18,25 @@ View your app in AI Studio: https://ai.studio/apps/drive/1K_w1C8XXadPkGBHGVNHJlz
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Docker
+
+### Build the Image
+```bash
+docker build -t log-triage .
+```
+
+### Run the Container
+```bash
+docker run -d -p 8080:80 --name log-triage-app log-triage
+```
+Access the app at [http://localhost:8080](http://localhost:8080).
+
+### Stop the Container
+```bash
+docker stop log-triage-app
+```
+To remove the container:
+```bash
+docker rm log-triage-app
+```
