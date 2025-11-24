@@ -37,15 +37,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [messages, isBotTyping]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4">
+    <div className="flex flex-col h-full bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="flex-grow overflow-y-auto p-6 space-y-4">
         {messages.map(msg => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         {isBotTyping && <MessageBubble message={{ id: 'typing', sender: 'bot', isLoading: true }} />}
         <div ref={messagesEndRef} />
       </div>
-      <div className="flex-shrink-0 p-4 bg-[#5C3C2C]/20">
+      <div className="flex-shrink-0 p-6 border-t border-gray-100 bg-gray-50/50">
         <ChatInput
           onUserResponse={onUserResponse}
           onFileUpload={onFileUpload}

@@ -11,9 +11,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isBot = message.sender === 'bot';
 
   const bubbleClasses = isBot
-    ? 'bg-[#5C3C2C]/60 text-[#F3EFEA]'
-    : 'bg-[#5A84AC] text-white';
-  
+    ? 'bg-white text-gray-800 shadow-md border border-gray-100'
+    : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg';
+
   const containerClasses = isBot ? 'justify-start' : 'justify-end';
 
   const renderContent = () => {
@@ -21,7 +21,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       return message.text ? (
         <div className="flex items-center space-x-3">
           <Loader />
-          <span>{message.text}</span>
+          <span className="text-sm">{message.text}</span>
         </div>
       ) : (
         <Loader />
@@ -30,13 +30,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     if (message.result) {
       return <TriageResultDisplay result={message.result} />;
     }
-    return <p className="whitespace-pre-wrap">{message.text}</p>;
+    return <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>;
   };
 
   return (
-    <div className={`flex items-end gap-2 ${containerClasses}`}>
+    <div className={`flex items-end gap-2 ${containerClasses} animate-fade-in-up`}>
       <div
-        className={`px-4 py-3 rounded-2xl ${bubbleClasses} ${isBot ? 'rounded-bl-none' : 'rounded-br-none'} animate-fade-in-up max-w-2xl`}
+        className={`px-5 py-3 rounded-2xl ${bubbleClasses} ${isBot ? 'rounded-bl-sm' : 'rounded-br-sm'} max-w-2xl transition-all duration-200 hover:shadow-xl`}
       >
         {renderContent()}
       </div>
